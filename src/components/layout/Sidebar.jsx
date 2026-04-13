@@ -1,4 +1,4 @@
-import { CheckSquare, CalendarCheck, CalendarClock, CircleCheckBig, LogOut, Moon, Sun } from 'lucide-react';
+import { CheckSquare, CalendarCheck, CalendarClock, CircleCheckBig, LogOut, Moon, Sun, BarChart3, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTasks } from '../../hooks/useTasks';
 import { NAV_ITEMS, FILTER_TYPES } from '../../utils/constants';
@@ -9,7 +9,7 @@ const iconMap = {
   CircleCheckBig,
 };
 
-const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
+const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme, activeView, setActiveView }) => {
   const { user, signOut, requestNotificationPermission } = useAuth();
   const { activeFilter, setFilter, taskCounts, allTags, activeTag, setActiveTag } = useTasks();
 
@@ -20,7 +20,13 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
   };
 
   const handleNavClick = (filterId) => {
+    setActiveView('tasks');
     setFilter(filterId);
+    onClose?.();
+  };
+
+  const handleViewClick = (view) => {
+    setActiveView(view);
     onClose?.();
   };
 
@@ -54,7 +60,7 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
           <span className="sidebar__nav-label">Tasks</span>
           {NAV_ITEMS.map((item) => {
             const Icon = iconMap[item.icon];
-            const isActive = activeFilter === item.id;
+            const isActive = activeView === 'tasks' && activeFilter === item.id;
             return (
               <button
                 key={item.id}
@@ -68,6 +74,24 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
               </button>
             );
           })}
+          
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <span className="sidebar__nav-label">Insights</span>
+            <button
+              className={`sidebar__nav-item ${activeView === 'analytics' ? 'sidebar__nav-item--active' : ''}`}
+              onClick={() => handleViewClick('analytics')}
+            >
+              <BarChart3 size={20} className="sidebar__nav-icon" />
+              <span>Analytics</span>
+            </button>
+            <button
+              className={`sidebar__nav-item ${activeView === 'profile' ? 'sidebar__nav-item--active' : ''}`}
+              onClick={() => handleViewClick('profile')}
+            >
+              <User size={20} className="sidebar__nav-icon" />
+              <span>Profile</span>
+            </button>
+          </div>
           
           {allTags && allTags.length > 0 && (
             <div style={{ marginTop: 'var(--space-4)' }}>

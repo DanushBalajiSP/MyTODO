@@ -3,7 +3,7 @@ import { Outlet } from 'react-router';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const AppLayout = ({ onAddTask }) => {
+const AppLayout = ({ onAddTask, activeView, setActiveView }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -48,11 +48,14 @@ const AppLayout = ({ onAddTask }) => {
         onClose={() => setSidebarOpen(false)}
         isDark={isDark}
         onToggleTheme={toggleTheme}
+        activeView={activeView}
+        setActiveView={setActiveView}
       />
       <main className="app-layout__main">
         <Header
           onMenuClick={() => setSidebarOpen(true)}
           onAddTask={onAddTask}
+          activeView={activeView}
         />
         <Outlet />
       </main>

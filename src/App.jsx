@@ -3,13 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
+import MainView from './pages/MainView';
 import NotFoundPage from './pages/NotFoundPage';
 
 const App = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [activeView, setActiveView] = useState('tasks'); // 'tasks', 'analytics', 'profile'
 
   const handleAddTask = useCallback(() => {
+    setActiveView('tasks');
     setShowTaskForm(true);
   }, []);
 
@@ -21,11 +23,13 @@ const App = () => {
 
         {/* Protected routes */}
         <Route element={<ProtectedLayout />}>
-          <Route element={<AppLayout onAddTask={handleAddTask} />}>
+          <Route element={<AppLayout onAddTask={handleAddTask} activeView={activeView} setActiveView={setActiveView} />}>
             <Route
               index
               element={
-                <DashboardPage
+                <MainView
+                  activeView={activeView}
+                  setActiveView={setActiveView}
                   showTaskForm={showTaskForm}
                   setShowTaskForm={setShowTaskForm}
                 />
