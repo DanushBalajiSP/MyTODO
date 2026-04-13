@@ -1,8 +1,9 @@
 import { createContext, useReducer, useEffect, useCallback, useMemo } from 'react';
-import { subscribeToTasks, createTask, updateTask, deleteTask, toggleTaskStatus } from '../services/taskService';
+import { subscribeToTasks, createTask, updateTask, deleteTask, toggleTaskStatus, updateTaskOrder } from '../services/taskService';
 import { isToday, isUpcoming } from '../utils/dateUtils';
-import { TASK_STATUS, FILTER_TYPES } from '../utils/constants';
+import { TASK_STATUS, FILTER_TYPES, TASK_PRIORITY } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
+import { arrayMove } from '@dnd-kit/sortable';
 
 export const TaskContext = createContext(null);
 
@@ -15,6 +16,8 @@ const taskReducer = (state, action) => {
       return { ...state, loading: action.payload };
     case 'SET_FILTER':
       return { ...state, activeFilter: action.payload };
+    case 'SET_ACTIVE_TAG':
+      return { ...state, activeTag: action.payload };
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false };
     case 'CLEAR_ERROR':
@@ -29,6 +32,13 @@ const initialState = {
   loading: true,
   error: null,
   activeFilter: FILTER_TYPES.TODAY,
+  activeTag: null, // null means no tag filter selected
+};
+
+const priorityValue = {
+  [TASK_PRIORITY.HIGH]: 3,
+  [TASK_PRIORITY.MEDIUM]: 2,
+  [TASK_PRIORITY.LOW]: 1
 };
 
 export const TaskProvider = ({ children }) => {
@@ -45,46 +55,60 @@ export const TaskProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     const unsubscribe = subscribeToTasks(user.uid, (tasks) => {
-      dispatch({ type: 'SET_TASKS', payload: tasks });
+      // First sort by Custom Order, then by Priority (fallback)
+      const sorted = [...tasks].sort((a, b) => {
+        if (a.order !== b.order) {
+          return (a.order || 0) - (b.order || 0); // User defined order
+        }
+        // Fallback to priority if order is the same
+        return (priorityValue[b.priority] || 0) - (priorityValue[a.priority] || 0);
+      });
+      dispatch({ type: 'SET_TASKS', payload: sorted });
     });
 
     return () => unsubscribe();
   }, [user?.uid]);
 
+  // Apply Tag Filter first
+  const tagFilteredTasks = useMemo(() => {
+    if (!state.activeTag) return state.tasks;
+    return state.tasks.filter(t => t.tags && t.tags.includes(state.activeTag));
+  }, [state.tasks, state.activeTag]);
+
   // Computed task groups
   const todayTasks = useMemo(() =>
-    state.tasks.filter(
+    tagFilteredTasks.filter(
       (task) =>
         task.status === TASK_STATUS.PENDING &&
         (isToday(task.dueDate) || (!task.dueDate))
     ),
-    [state.tasks]
+    [tagFilteredTasks]
   );
 
   const overdueTasks = useMemo(() =>
-    state.tasks.filter(
+    tagFilteredTasks.filter(
       (task) =>
         task.status === TASK_STATUS.PENDING &&
         task.dueDate &&
         !isToday(task.dueDate) &&
         !isUpcoming(task.dueDate)
     ),
-    [state.tasks]
+    [tagFilteredTasks]
   );
 
   const upcomingTasks = useMemo(() =>
-    state.tasks.filter(
+    tagFilteredTasks.filter(
       (task) =>
         task.status === TASK_STATUS.PENDING &&
         task.dueDate &&
         isUpcoming(task.dueDate)
     ),
-    [state.tasks]
+    [tagFilteredTasks]
   );
 
   const completedTasks = useMemo(() =>
-    state.tasks.filter((task) => task.status === TASK_STATUS.COMPLETED),
-    [state.tasks]
+    tagFilteredTasks.filter((task) => task.status === TASK_STATUS.COMPLETED),
+    [tagFilteredTasks]
   );
 
   // Get filtered tasks based on active filter
@@ -97,32 +121,44 @@ export const TaskProvider = ({ children }) => {
       case FILTER_TYPES.COMPLETED:
         return completedTasks;
       case FILTER_TYPES.ALL:
-        return state.tasks;
+        return tagFilteredTasks;
       default:
         return [...overdueTasks, ...todayTasks];
     }
-  }, [state.activeFilter, overdueTasks, todayTasks, upcomingTasks, completedTasks, state.tasks]);
+  }, [state.activeFilter, overdueTasks, todayTasks, upcomingTasks, completedTasks, tagFilteredTasks]);
 
   // Task counts for badges
   const taskCounts = useMemo(() => ({
     today: todayTasks.length + overdueTasks.length,
     upcoming: upcomingTasks.length,
     completed: completedTasks.length,
-    total: state.tasks.length,
-  }), [todayTasks, overdueTasks, upcomingTasks, completedTasks, state.tasks]);
+    total: tagFilteredTasks.length,
+  }), [todayTasks, overdueTasks, upcomingTasks, completedTasks, tagFilteredTasks]);
+
+  // Extract all unique tags for the sidebar
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    state.tasks.forEach(t => t.tags?.forEach(tag => tags.add(tag)));
+    return Array.from(tags).sort();
+  }, [state.tasks]);
 
   // CRUD actions
   const addTask = useCallback(async (taskData) => {
     if (!user?.uid) return;
     try {
       dispatch({ type: 'CLEAR_ERROR' });
-      const taskId = await createTask(user.uid, taskData);
+      // Add order relative to current tasks
+      const newTaskData = {
+        ...taskData,
+        order: state.tasks.length
+      };
+      const taskId = await createTask(user.uid, newTaskData);
       return taskId;
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  }, [user?.uid]);
+  }, [user?.uid, state.tasks.length]);
 
   const editTask = useCallback(async (taskId, updates) => {
     if (!user?.uid) return;
@@ -149,16 +185,44 @@ export const TaskProvider = ({ children }) => {
   const toggleStatus = useCallback(async (taskId, currentStatus) => {
     if (!user?.uid) return;
     try {
+      const taskObj = state.tasks.find(t => t.id === taskId);
+      if (!taskObj) return;
+
       dispatch({ type: 'CLEAR_ERROR' });
-      await toggleTaskStatus(user.uid, taskId, currentStatus);
+      await toggleTaskStatus(user.uid, taskObj);
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       throw error;
     }
-  }, [user?.uid]);
+  }, [user?.uid, state.tasks]);
+
+  const reorderTasks = useCallback(async (activeId, overId) => {
+    if (!user?.uid || activeId === overId) return;
+    
+    // Find absolute list indices based on the filtered view to reflect the UI change
+    const oldIndex = filteredTasks.findIndex(t => t.id === activeId);
+    const newIndex = filteredTasks.findIndex(t => t.id === overId);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Optimistically update local array
+    const reorderedList = arrayMove(filteredTasks, oldIndex, newIndex);
+    const taskIds = reorderedList.map(t => t.id);
+
+    try {
+      await updateTaskOrder(user.uid, taskIds);
+    } catch (error) {
+      console.error('Failed to reorder', error);
+      // Wait for real-time listener to repair state
+    }
+  }, [user?.uid, filteredTasks]);
 
   const setFilter = useCallback((filter) => {
     dispatch({ type: 'SET_FILTER', payload: filter });
+  }, []);
+
+  const setActiveTag = useCallback((tag) => {
+    dispatch({ type: 'SET_ACTIVE_TAG', payload: tag });
   }, []);
 
   const value = {
@@ -169,11 +233,14 @@ export const TaskProvider = ({ children }) => {
     completedTasks,
     overdueTasks,
     taskCounts,
+    allTags,
     addTask,
     editTask,
     removeTask,
     toggleStatus,
+    reorderTasks,
     setFilter,
+    setActiveTag,
   };
 
   return (

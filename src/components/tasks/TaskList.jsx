@@ -2,6 +2,19 @@ import TaskCard from './TaskCard';
 import EmptyState from '../common/EmptyState';
 import { ClipboardList, CheckCircle2, CalendarRange, Inbox } from 'lucide-react';
 import { FILTER_TYPES } from '../../utils/constants';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors 
+} from '@dnd-kit/core';
+import { 
+  SortableContext, 
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy 
+} from '@dnd-kit/sortable';
 
 const emptyStateConfig = {
   [FILTER_TYPES.TODAY]: {
@@ -26,7 +39,25 @@ const emptyStateConfig = {
   },
 };
 
-const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask }) => {
+const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, onReorder }) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // minimum drag distance before taking effect, helps clicks pass through
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over?.id && onReorder) {
+      onReorder(active.id, over?.id);
+    }
+  };
+
   if (tasks.length === 0) {
     const config = emptyStateConfig[activeFilter] || emptyStateConfig[FILTER_TYPES.ALL];
     return (
@@ -40,22 +71,33 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask }
     );
   }
 
+  // We only allow reordering if we are in the 'TODAY' or general lists, maybe disabled in Completed.
+  // Actually dnd-kit can manage list of IDs.
+  const taskIds = tasks.map(t => t.id);
+
   return (
-    <div className="task-list">
-      {tasks.map((task, index) => (
-        <div
-          key={task.id}
-          style={{ animationDelay: `${index * 50}ms` }}
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="task-list">
+        <SortableContext 
+          items={taskIds}
+          strategy={verticalListSortingStrategy}
         >
-          <TaskCard
-            task={task}
-            onToggle={onToggle}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        </div>
-      ))}
-    </div>
+          {tasks.map((task, index) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </SortableContext>
+      </div>
+    </DndContext>
   );
 };
 

@@ -5,7 +5,8 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../lib/firebase';
+import { auth, db, googleProvider, messaging } from '../lib/firebase';
+import { getToken } from 'firebase/messaging';
 
 export const AuthContext = createContext(null);
 
@@ -59,6 +60,31 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Request Notification Permissions & Save Token
+  const requestNotificationPermission = useCallback(async () => {
+    if (!user || !messaging) return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const token = await getToken(messaging, { 
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY 
+        });
+        if (token) {
+          console.log('FCM Token received successfully');
+          const userRef = doc(db, 'users', user.uid);
+          await setDoc(userRef, { fcmToken: token, updatedAt: serverTimestamp() }, { merge: true });
+          alert('Notifications enabled successfully!');
+        } else {
+          console.log('No registration token available.');
+        }
+      } else {
+        alert('Notification permission denied.');
+      }
+    } catch (error) {
+      console.error('An error occurred while retrieving token. ', error);
+    }
+  }, [user]);
+
   // Sign in with Google
   const signInWithGoogle = useCallback(async () => {
     try {
@@ -87,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     signInWithGoogle,
     signOut,
+    requestNotificationPermission,
     isAuthenticated: !!user,
   };
 

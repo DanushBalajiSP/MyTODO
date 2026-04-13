@@ -19,6 +19,9 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
     editTask,
     removeTask,
     toggleStatus,
+    reorderTasks,
+    activeTag,
+    setActiveTag,
   } = useTasks();
 
   const [editingTask, setEditingTask] = useState(null);
@@ -121,6 +124,17 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
         ))}
       </div>
 
+      {/* Active Tag indicator */}
+      {activeTag && (
+        <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>Filtering by tag:</span>
+          <span className="tag-chip">
+            #{activeTag}
+            <button onClick={() => setActiveTag(null)}>✕</button>
+          </span>
+        </div>
+      )}
+
       {/* Task list */}
       <TaskList
         tasks={filteredTasks}
@@ -129,12 +143,10 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
         onEdit={handleEditTask}
         onDelete={setDeletingTask}
         onAddTask={handleAddTask}
+        onReorder={reorderTasks}
       />
 
-      {/* Mobile FAB */}
-      <button className="fab" onClick={handleAddTask} aria-label="Add new task" id="fab-add-task">
-        <Plus size={28} />
-      </button>
+
 
       {/* Create/Edit Modal */}
       <Modal

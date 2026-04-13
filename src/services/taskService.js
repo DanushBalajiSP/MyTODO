@@ -83,16 +83,59 @@ export const deleteTask = async (userId, taskId) => {
 
 /**
  * Toggle task between pending and completed
+ * Also handles recurring logic
  */
-export const toggleTaskStatus = async (userId, taskId, currentStatus) => {
-  const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+export const toggleTaskStatus = async (userId, task) => {
+  const newStatus = task.status === 'pending' ? 'completed' : 'pending';
+  const isCompleting = newStatus === 'completed';
+  const taskRef = getTaskDocRef(userId, task.id);
+  
   const updates = {
     status: newStatus,
     updatedAt: serverTimestamp(),
-    completedAt: newStatus === 'completed' ? serverTimestamp() : null,
+    completedAt: isCompleting ? serverTimestamp() : null,
   };
 
-  await updateTask(userId, taskId, updates);
+  // If completing a recurring task, clone it for the next occurrence
+  if (isCompleting && task.isRecurring && task.recurringPattern !== 'none') {
+    const nextDueDate = new Date(task.dueDate || new Date());
+    
+    // Add time based on pattern
+    if (task.recurringPattern === 'daily') {
+      nextDueDate.setDate(nextDueDate.getDate() + 1);
+    } else if (task.recurringPattern === 'weekly') {
+      nextDueDate.setDate(nextDueDate.getDate() + 7);
+    }
+    
+    // Create new spawn task
+    const cloneData = {
+      ...task,
+      dueDate: nextDueDate,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      completedAt: null,
+    };
+    // remove the id so it creates a new doc
+    delete cloneData.id;
+    
+    await createTask(userId, cloneData);
+  }
+
+  await updateDoc(taskRef, updates);
+};
+
+/**
+ * Update the order of tasks (reordering hook)
+ */
+export const updateTaskOrder = async (userId, taskIds) => {
+  // To keep it simple without full batched writes, loop through and update.
+  // In production, we'd use writeBatch
+  const promises = taskIds.map((taskId, index) => {
+    const taskRef = getTaskDocRef(userId, taskId);
+    return updateDoc(taskRef, { order: index, updatedAt: serverTimestamp() });
+  });
+  await Promise.all(promises);
 };
 
 /**

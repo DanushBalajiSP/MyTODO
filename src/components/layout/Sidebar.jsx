@@ -10,8 +10,8 @@ const iconMap = {
 };
 
 const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
-  const { user, signOut } = useAuth();
-  const { activeFilter, setFilter, taskCounts } = useTasks();
+  const { user, signOut, requestNotificationPermission } = useAuth();
+  const { activeFilter, setFilter, taskCounts, allTags, activeTag, setActiveTag } = useTasks();
 
   const countMap = {
     [FILTER_TYPES.TODAY]: taskCounts.today,
@@ -68,10 +68,54 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
               </button>
             );
           })}
+          
+          {allTags && allTags.length > 0 && (
+            <div style={{ marginTop: 'var(--space-4)' }}>
+              <span className="sidebar__nav-label">Tags</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', padding: '0 var(--space-4)', marginTop: 'var(--space-2)' }}>
+                {allTags.map(tag => (
+                  <button
+                    key={tag}
+                    className="tag-chip"
+                    style={{ 
+                      background: activeTag === tag ? 'var(--primary-100)' : undefined, 
+                      color: activeTag === tag ? 'var(--primary-700)' : undefined, 
+                      border: activeTag === tag ? '1px solid var(--primary-300)' : '1px solid transparent',
+                      cursor: 'pointer' 
+                    }}
+                    onClick={() => { 
+                      setActiveTag(activeTag === tag ? null : tag); 
+                      // Switch to ALL filter to see all results when selecting a tag
+                      if (activeTag !== tag) setFilter(FILTER_TYPES.ALL);
+                      onClose?.(); 
+                    }}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Footer */}
         <div className="sidebar__footer">
+          {/* Notification toggle */}
+          {window.Notification?.permission !== 'granted' && (
+            <button
+              className="sidebar__nav-item"
+              onClick={requestNotificationPermission}
+              title="Enable Push Notifications"
+              style={{ 
+                marginBottom: 'var(--space-1)', 
+                color: 'var(--primary-500)' 
+              }}
+            >
+              <span style={{ fontSize: '20px', width: '20px', textAlign: 'center' }}>🔔</span>
+              <span>Enable Reminders</span>
+            </button>
+          )}
+
           {/* Theme toggle */}
           <button
             className="sidebar__nav-item"
