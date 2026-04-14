@@ -140,8 +140,9 @@ export const updateTaskOrder = async (userId, taskIds) => {
  */
 export const subscribeToTasks = (userId, callback) => {
   const tasksRef = getTasksRef(userId);
-  // Order by 'order' to match actual display logic and avoid re-sorting server results
-  const q = query(tasksRef, orderBy('order', 'asc'), orderBy('createdAt', 'desc'));
+  // Only order by createdAt to avoid requiring a composite Firestore index.
+  // The local TaskContext handles the actual visual sorting (by order -> priority -> etc).
+  const q = query(tasksRef, orderBy('createdAt', 'desc'));
 
   return onSnapshot(q, (snapshot) => {
     const tasks = snapshot.docs.map((docSnap) => ({

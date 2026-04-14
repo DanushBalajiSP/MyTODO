@@ -26,8 +26,13 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
   };
 
   const handleToggle = (e) => {
+    // Stop BOTH change and click from reaching parent card
     e.stopPropagation();
     onToggle(task.id, task.status);
+  };
+
+  const stopClick = (e) => {
+    e.stopPropagation();
   };
 
   const handleEdit = (e) => {
@@ -72,7 +77,7 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
       </div>
 
       {/* Checkbox */}
-      <div className="task-card__checkbox">
+      <div className="task-card__checkbox" onClick={stopClick}>
         <input
           type="checkbox"
           checked={isCompleted}

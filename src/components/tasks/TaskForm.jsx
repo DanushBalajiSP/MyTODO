@@ -31,7 +31,7 @@ const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
         dueDate: task.dueDate ? formatForInput(task.dueDate) : '',
         priority: task.priority || TASK_PRIORITY.MEDIUM,
         isRecurring: task.isRecurring || false,
-        recurringPattern: task.recurringPattern || REPETITION.NONE,
+        recurringPattern: task.recurringPattern || RECURRING_PATTERN.NONE,
         tags: task.tags || [],
       });
     } else {
@@ -44,7 +44,7 @@ const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
         dueDate: formatForInput(now),
         priority: TASK_PRIORITY.MEDIUM,
         isRecurring: false,
-        recurringPattern: REPETITION.NONE,
+        recurringPattern: RECURRING_PATTERN.NONE,
         tags: [],
       });
     }

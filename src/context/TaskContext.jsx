@@ -55,12 +55,15 @@ export const TaskProvider = ({ children }) => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     const unsubscribe = subscribeToTasks(user.uid, (tasks) => {
-      // First sort by Custom Order, then by Priority (fallback)
+      // Robust sorting: order || createdAt timestamp
       const sorted = [...tasks].sort((a, b) => {
-        if (a.order !== b.order) {
-          return (a.order || 0) - (b.order || 0); // User defined order
+        const orderA = a.order ?? a.createdAt.getTime();
+        const orderB = b.order ?? b.createdAt.getTime();
+        
+        if (orderA !== orderB) {
+          return orderA - orderB;
         }
-        // Fallback to priority if order is the same
+        // Fallback to priority
         return (priorityValue[b.priority] || 0) - (priorityValue[a.priority] || 0);
       });
       dispatch({ type: 'SET_TASKS', payload: sorted });
@@ -148,9 +151,10 @@ export const TaskProvider = ({ children }) => {
     try {
       dispatch({ type: 'CLEAR_ERROR' });
       // Add order relative to current tasks
+      // Add order relative to current timestamp so new tasks appear at the bottom by default
       const newTaskData = {
         ...taskData,
-        order: state.tasks.length
+        order: Date.now()
       };
       const taskId = await createTask(user.uid, newTaskData);
       return taskId;
@@ -199,23 +203,36 @@ export const TaskProvider = ({ children }) => {
   const reorderTasks = useCallback(async (activeId, overId) => {
     if (!user?.uid || activeId === overId) return;
     
-    // Find absolute list indices based on the filtered view to reflect the UI change
+    // Find indices based on the filtered view we are looking at!
     const oldIndex = filteredTasks.findIndex(t => t.id === activeId);
     const newIndex = filteredTasks.findIndex(t => t.id === overId);
     
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Optimistically update local array
-    const reorderedList = arrayMove(filteredTasks, oldIndex, newIndex);
-    const taskIds = reorderedList.map(t => t.id);
+    // Calculate new order value
+    let newOrderVal = 0;
+    if (newIndex === 0) {
+      const nextOrder = reorderedList[1]?.order ?? reorderedList[1]?.createdAt?.getTime() ?? Date.now();
+      newOrderVal = nextOrder - 100000; // Large gap
+    } else if (newIndex === reorderedList.length - 1) {
+      const prevOrder = reorderedList[reorderedList.length - 2]?.order ?? reorderedList[reorderedList.length - 2]?.createdAt?.getTime() ?? Date.now();
+      newOrderVal = prevOrder + 100000;
+    } else {
+      const prevOrder = reorderedList[newIndex - 1]?.order ?? reorderedList[newIndex - 1]?.createdAt?.getTime() ?? Date.now();
+      const nextOrder = reorderedList[newIndex + 1]?.order ?? reorderedList[newIndex + 1]?.createdAt?.getTime() ?? Date.now();
+      newOrderVal = (prevOrder + nextOrder) / 2;
+    }
+
+    // Optimistic Update: prevent snap-back by updating local state immediately
+    dispatch({ type: 'SET_TASKS', payload: arrayMove(state.tasks, state.tasks.findIndex(t => t.id === activeId), state.tasks.findIndex(t => t.id === overId)) });
 
     try {
-      await updateTaskOrder(user.uid, taskIds);
+      await editTask(activeId, { order: newOrderVal });
     } catch (error) {
       console.error('Failed to reorder', error);
-      // Wait for real-time listener to repair state
+      // Wait for Firebase listener to resync if it fails
     }
-  }, [user?.uid, filteredTasks]);
+  }, [user?.uid, filteredTasks, editTask]);
 
   const setFilter = useCallback((filter) => {
     dispatch({ type: 'SET_FILTER', payload: filter });

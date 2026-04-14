@@ -1,4 +1,5 @@
 import { Menu, Plus } from 'lucide-react';
+import { useLocation } from 'react-router';
 import Button from '../common/Button';
 import { useTasks } from '../../hooks/useTasks';
 import { FILTER_TYPES } from '../../utils/constants';
@@ -19,9 +20,11 @@ const filterSubtitleMap = {
 
 const Header = ({ onMenuClick, onAddTask }) => {
   const { activeFilter } = useTasks();
+  const location = useLocation();
+  const isDashboard = location.pathname === '/' || location.pathname === '';
 
   return (
-    <header className="header">
+    <header className="header" style={{ borderBottom: isDashboard ? '1px solid var(--border-color)' : 'none' }}>
       <div className="header__left">
         <button
           className="header__menu-btn"
@@ -30,15 +33,19 @@ const Header = ({ onMenuClick, onAddTask }) => {
         >
           <Menu size={24} />
         </button>
-        <div>
-          <h1 className="header__title">{filterTitleMap[activeFilter]}</h1>
-          <p className="header__subtitle">{filterSubtitleMap[activeFilter]}</p>
-        </div>
+        {isDashboard && (
+          <div>
+            <h1 className="header__title">{filterTitleMap[activeFilter]}</h1>
+            <p className="header__subtitle">{filterSubtitleMap[activeFilter]}</p>
+          </div>
+        )}
       </div>
       <div className="header__right">
-        <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
-          Add Task
-        </Button>
+        {isDashboard && (
+          <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
+            Add Task
+          </Button>
+        )}
       </div>
     </header>
   );
