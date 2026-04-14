@@ -49,6 +49,7 @@ export const AuthProvider = ({ children }) => {
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
+          creationTime: firebaseUser.metadata.creationTime,
         });
         await createUserDocument(firebaseUser);
       } else {

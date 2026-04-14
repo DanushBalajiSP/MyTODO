@@ -4,6 +4,8 @@ import ProtectedLayout from './components/layout/ProtectedLayout';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AnalyticsView from './components/analytics/AnalyticsView';
+import ProfileView from './pages/ProfileView';
 import NotFoundPage from './pages/NotFoundPage';
 
 const App = () => {
@@ -31,6 +33,8 @@ const App = () => {
                 />
               }
             />
+            <Route path="/analytics" element={<AnalyticsView />} />
+            <Route path="/profile" element={<ProfileView />} />
           </Route>
         </Route>
 

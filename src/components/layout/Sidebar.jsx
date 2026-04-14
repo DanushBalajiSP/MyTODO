@@ -1,4 +1,5 @@
-import { CheckSquare, CalendarCheck, CalendarClock, CircleCheckBig, LogOut, Moon, Sun } from 'lucide-react';
+import { CheckSquare, CalendarCheck, CalendarClock, CircleCheckBig, LogOut, Moon, Sun, BarChart3, User } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTasks } from '../../hooks/useTasks';
 import { NAV_ITEMS, FILTER_TYPES } from '../../utils/constants';
@@ -13,6 +14,12 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
   const { user, signOut, requestNotificationPermission } = useAuth();
   const { activeFilter, setFilter, taskCounts, allTags, activeTag, setActiveTag } = useTasks();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAnalytics = location.pathname === '/analytics';
+  const isProfile = location.pathname === '/profile';
+
   const countMap = {
     [FILTER_TYPES.TODAY]: taskCounts.today,
     [FILTER_TYPES.UPCOMING]: taskCounts.upcoming,
@@ -20,6 +27,7 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
   };
 
   const handleNavClick = (filterId) => {
+    navigate('/');
     setFilter(filterId);
     onClose?.();
   };
@@ -68,6 +76,15 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
               </button>
             );
           })}
+
+          <span className="sidebar__nav-label" style={{ marginTop: 'var(--space-4)' }}>Insights</span>
+          <button
+            className={`sidebar__nav-item ${isAnalytics ? 'sidebar__nav-item--active' : ''}`}
+            onClick={() => { navigate('/analytics'); onClose?.(); }}
+          >
+            <BarChart3 size={20} className="sidebar__nav-icon" />
+            <span>Dashboard</span>
+          </button>
           
           {allTags && allTags.length > 0 && (
             <div style={{ marginTop: 'var(--space-4)' }}>
@@ -127,7 +144,11 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
           </button>
 
           {/* User section */}
-          <div className="sidebar__user">
+          <div 
+            className="sidebar__user" 
+            style={{ cursor: 'pointer', background: isProfile ? 'var(--bg-hover)' : '' }}
+            onClick={() => { navigate('/profile'); onClose?.(); }}
+          >
             {user?.photoURL ? (
               <img
                 src={user.photoURL}
@@ -145,7 +166,7 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
               <p className="sidebar__user-email">{user?.email || ''}</p>
             </div>
             <button
-              onClick={handleSignOut}
+              onClick={(e) => { e.stopPropagation(); handleSignOut(); }}
               className="task-card__action-btn"
               title="Sign out"
               style={{ opacity: 1 }}
