@@ -73,12 +73,13 @@ export const AuthProvider = ({ children }) => {
           console.log('FCM Token received successfully');
           const userRef = doc(db, 'users', user.uid);
           await setDoc(userRef, { fcmToken: token, updatedAt: serverTimestamp() }, { merge: true });
-          alert('Notifications enabled successfully!');
+          // TODO Phase 3: replace with toast notification
+          console.info('✅ Notifications enabled successfully!');
         } else {
-          console.log('No registration token available.');
+          console.warn('No FCM registration token available.');
         }
       } else {
-        alert('Notification permission denied.');
+        console.warn('Notification permission denied.');
       }
     } catch (error) {
       console.error('An error occurred while retrieving token. ', error);

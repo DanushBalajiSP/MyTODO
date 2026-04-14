@@ -17,22 +17,8 @@ const filterSubtitleMap = {
   [FILTER_TYPES.ALL]: 'Everything in one place',
 };
 
-const Header = ({ onMenuClick, onAddTask, activeView }) => {
-  const { activeFilter, activeTag } = useTasks();
-
-  const getTitle = () => {
-    if (activeView === 'analytics') return 'Analytics';
-    if (activeView === 'profile') return 'Profile & Settings';
-    if (activeTag) return `Tag: #${activeTag}`;
-    return filterTitleMap[activeFilter];
-  };
-
-  const getSubtitle = () => {
-    if (activeView === 'analytics') return 'Your productivity insights';
-    if (activeView === 'profile') return 'Manage your account';
-    if (activeTag) return `Viewing tasks tagged with #${activeTag}`;
-    return filterSubtitleMap[activeFilter];
-  };
+const Header = ({ onMenuClick, onAddTask }) => {
+  const { activeFilter } = useTasks();
 
   return (
     <header className="header">
@@ -45,16 +31,14 @@ const Header = ({ onMenuClick, onAddTask, activeView }) => {
           <Menu size={24} />
         </button>
         <div>
-          <h1 className="header__title">{getTitle()}</h1>
-          <p className="header__subtitle">{getSubtitle()}</p>
+          <h1 className="header__title">{filterTitleMap[activeFilter]}</h1>
+          <p className="header__subtitle">{filterSubtitleMap[activeFilter]}</p>
         </div>
       </div>
       <div className="header__right">
-        {activeView === 'tasks' && (
-          <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
-            Add Task
-          </Button>
-        )}
+        <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
+          Add Task
+        </Button>
       </div>
     </header>
   );

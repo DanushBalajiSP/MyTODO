@@ -43,7 +43,7 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // minimum drag distance before taking effect, helps clicks pass through
+        distance: 8, // Raised from 5 → 8px for better mobile touch accuracy
       },
     }),
     useSensor(KeyboardSensor, {

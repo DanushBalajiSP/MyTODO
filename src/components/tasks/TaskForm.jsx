@@ -1,25 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Plus } from 'lucide-react';
 import Button from '../common/Button';
 import { formatForInput } from '../../utils/dateUtils';
-import { TASK_PRIORITY } from '../../utils/constants';
+import { TASK_PRIORITY, TAG_RULES, DEFAULT_TAGS, RECURRING_PATTERN } from '../../utils/constants';
 
-// Smart tag matching rules
-const TAG_RULES = [
-  { keywords: ['meet', 'call', 'work', 'email', 'prep'], tag: 'work' },
-  { keywords: ['buy', 'shop', 'grocer', 'order'], tag: 'shopping' },
-  { keywords: ['study', 'read', 'assign', 'class', 'homework', 'exam'], tag: 'college' },
-  { keywords: ['gym', 'health', 'workout', 'run', 'doctor'], tag: 'health' },
-  { keywords: ['pay', 'bill', 'bank', 'finance'], tag: 'finance' },
-];
 
-const DEFAULT_TAGS = ['personal', 'urgent', 'home', 'ideas'];
-
-const REPETITION = {
-  NONE: 'none',
-  DAILY: 'daily',
-  WEEKLY: 'weekly',
-};
 
 const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
   const isEditing = !!task;
@@ -30,7 +15,7 @@ const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
     dueDate: '',
     priority: TASK_PRIORITY.MEDIUM,
     isRecurring: false,
-    recurringPattern: REPETITION.NONE,
+    recurringPattern: RECURRING_PATTERN.NONE,
     tags: [],
   });
 
@@ -138,7 +123,7 @@ const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
     setFormData(prev => ({
       ...prev,
       recurringPattern: pattern,
-      isRecurring: pattern !== REPETITION.NONE
+      isRecurring: pattern !== RECURRING_PATTERN.NONE
     }));
   };
 
@@ -245,9 +230,9 @@ const TaskForm = ({ task, onSubmit, onCancel, loading }) => {
             value={formData.recurringPattern}
             onChange={handleRecurringChange}
           >
-            <option value={REPETITION.NONE}>Does not repeat</option>
-            <option value={REPETITION.DAILY}>Daily</option>
-            <option value={REPETITION.WEEKLY}>Weekly</option>
+            <option value={RECURRING_PATTERN.NONE}>Does not repeat</option>
+            <option value={RECURRING_PATTERN.DAILY}>Daily</option>
+            <option value={RECURRING_PATTERN.WEEKLY}>Weekly</option>
           </select>
         </div>
       </div>

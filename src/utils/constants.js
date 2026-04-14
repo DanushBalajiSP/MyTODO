@@ -16,6 +16,12 @@ export const FILTER_TYPES = {
   ALL: 'all',
 };
 
+export const RECURRING_PATTERN = {
+  NONE: 'none',
+  DAILY: 'daily',
+  WEEKLY: 'weekly',
+};
+
 export const NAV_ITEMS = [
   {
     id: FILTER_TYPES.TODAY,
@@ -33,3 +39,16 @@ export const NAV_ITEMS = [
     icon: 'CircleCheckBig',
   },
 ];
+
+// Smart tag keyword rules — used in TaskForm for suggestions
+export const TAG_RULES = [
+  { keywords: ['meet', 'call', 'work', 'email', 'prep', 'project'], tag: 'work' },
+  { keywords: ['buy', 'shop', 'grocer', 'order', 'purchase'], tag: 'shopping' },
+  { keywords: ['study', 'read', 'assign', 'class', 'homework', 'exam', 'lecture'], tag: 'college' },
+  { keywords: ['gym', 'health', 'workout', 'run', 'doctor', 'exercise', 'yoga'], tag: 'health' },
+  { keywords: ['pay', 'bill', 'bank', 'finance', 'tax', 'budget'], tag: 'finance' },
+  { keywords: ['home', 'clean', 'fix', 'repair', 'cook', 'laundry'], tag: 'home' },
+];
+
+export const DEFAULT_TAGS = ['personal', 'urgent', 'ideas', 'review'];
+

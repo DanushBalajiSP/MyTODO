@@ -1,35 +1,31 @@
 import { useState, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { HashRouter, Routes, Route } from 'react-router';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
-import MainView from './pages/MainView';
+import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const App = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [activeView, setActiveView] = useState('tasks'); // 'tasks', 'analytics', 'profile'
 
   const handleAddTask = useCallback(() => {
-    setActiveView('tasks');
     setShowTaskForm(true);
   }, []);
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
 
         {/* Protected routes */}
         <Route element={<ProtectedLayout />}>
-          <Route element={<AppLayout onAddTask={handleAddTask} activeView={activeView} setActiveView={setActiveView} />}>
+          <Route element={<AppLayout onAddTask={handleAddTask} />}>
             <Route
               index
               element={
-                <MainView
-                  activeView={activeView}
-                  setActiveView={setActiveView}
+                <DashboardPage
                   showTaskForm={showTaskForm}
                   setShowTaskForm={setShowTaskForm}
                 />
@@ -41,7 +37,7 @@ const App = () => {
         {/* Catch all */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 

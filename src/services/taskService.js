@@ -9,6 +9,7 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -34,13 +35,13 @@ export const createTask = async (userId, taskData) => {
     description: taskData.description?.trim() || '',
     dueDate: taskData.dueDate instanceof Date
       ? Timestamp.fromDate(taskData.dueDate)
-      : taskData.dueDate,
+      : taskData.dueDate || null,
     status: 'pending',
     priority: taskData.priority || 'medium',
     tags: taskData.tags || [],
-    isRecurring: false,
-    recurringPattern: null,
-    order: taskData.order || 0,
+    isRecurring: taskData.isRecurring || false,
+    recurringPattern: taskData.recurringPattern || null,
+    order: taskData.order ?? 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     completedAt: null,
@@ -82,14 +83,14 @@ export const deleteTask = async (userId, taskId) => {
 };
 
 /**
- * Toggle task between pending and completed
- * Also handles recurring logic
+ * Toggle task between pending and completed.
+ * If the task is recurring, automatically spawns the next occurrence.
  */
 export const toggleTaskStatus = async (userId, task) => {
   const newStatus = task.status === 'pending' ? 'completed' : 'pending';
   const isCompleting = newStatus === 'completed';
   const taskRef = getTaskDocRef(userId, task.id);
-  
+
   const updates = {
     status: newStatus,
     updatedAt: serverTimestamp(),
@@ -97,28 +98,23 @@ export const toggleTaskStatus = async (userId, task) => {
   };
 
   // If completing a recurring task, clone it for the next occurrence
-  if (isCompleting && task.isRecurring && task.recurringPattern !== 'none') {
+  if (isCompleting && task.isRecurring && task.recurringPattern && task.recurringPattern !== 'none') {
     const nextDueDate = new Date(task.dueDate || new Date());
-    
-    // Add time based on pattern
+
     if (task.recurringPattern === 'daily') {
       nextDueDate.setDate(nextDueDate.getDate() + 1);
     } else if (task.recurringPattern === 'weekly') {
       nextDueDate.setDate(nextDueDate.getDate() + 7);
     }
-    
-    // Create new spawn task
+
+    // Build a clean clone — omit id and Firestore-managed timestamps
+    const { id: _id, createdAt: _ca, updatedAt: _ua, completedAt: _co, ...rest } = task;
     const cloneData = {
-      ...task,
+      ...rest,
       dueDate: nextDueDate,
       status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      completedAt: null,
     };
-    // remove the id so it creates a new doc
-    delete cloneData.id;
-    
+
     await createTask(userId, cloneData);
   }
 
@@ -126,35 +122,36 @@ export const toggleTaskStatus = async (userId, task) => {
 };
 
 /**
- * Update the order of tasks (reordering hook)
+ * Atomically update the display order of a set of tasks using a write batch.
+ * Much more efficient than N individual updateDoc calls.
  */
 export const updateTaskOrder = async (userId, taskIds) => {
-  // To keep it simple without full batched writes, loop through and update.
-  // In production, we'd use writeBatch
-  const promises = taskIds.map((taskId, index) => {
+  const batch = writeBatch(db);
+  taskIds.forEach((taskId, index) => {
     const taskRef = getTaskDocRef(userId, taskId);
-    return updateDoc(taskRef, { order: index, updatedAt: serverTimestamp() });
+    batch.update(taskRef, { order: index, updatedAt: serverTimestamp() });
   });
-  await Promise.all(promises);
+  await batch.commit();
 };
 
 /**
- * Subscribe to real-time task updates
+ * Subscribe to real-time task updates, ordered by custom sort order.
  * @returns {Function} Unsubscribe function
  */
 export const subscribeToTasks = (userId, callback) => {
   const tasksRef = getTasksRef(userId);
-  const q = query(tasksRef, orderBy('createdAt', 'desc'));
+  // Order by 'order' to match actual display logic and avoid re-sorting server results
+  const q = query(tasksRef, orderBy('order', 'asc'), orderBy('createdAt', 'desc'));
 
   return onSnapshot(q, (snapshot) => {
-    const tasks = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      // Convert Firestore Timestamps to JS Dates for easier handling
-      dueDate: doc.data().dueDate?.toDate?.() || null,
-      createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-      updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-      completedAt: doc.data().completedAt?.toDate?.() || null,
+    const tasks = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+      // Normalize all Firestore Timestamps to JS Dates in one place
+      dueDate: docSnap.data().dueDate?.toDate?.() || null,
+      createdAt: docSnap.data().createdAt?.toDate?.() || new Date(),
+      updatedAt: docSnap.data().updatedAt?.toDate?.() || new Date(),
+      completedAt: docSnap.data().completedAt?.toDate?.() || null,
     }));
     callback(tasks);
   });
