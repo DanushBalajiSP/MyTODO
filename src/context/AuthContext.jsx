@@ -63,22 +63,31 @@ export const AuthProvider = ({ children }) => {
 
   // Request Notification Permissions & Save Token
   const requestNotificationPermission = useCallback(async () => {
-    if (!user || !messaging) return;
+    if (typeof Notification === 'undefined') return;
+    
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const token = await getToken(messaging, { 
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY 
-        });
-        if (token) {
-          console.log('FCM Token received successfully');
-          const userRef = doc(db, 'users', user.uid);
-          await setDoc(userRef, { fcmToken: token, updatedAt: serverTimestamp() }, { merge: true });
-          // TODO Phase 3: replace with toast notification
-          console.info('✅ Notifications enabled successfully!');
-        } else {
-          console.warn('No FCM registration token available.');
+        console.info('✅ Local Notifications enabled successfully!');
+        
+        // Attempt Firebase Cloud Messaging registration if supported
+        if (messaging && user) {
+          try {
+            const token = await getToken(messaging, { 
+              vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY 
+            });
+            if (token) {
+              const userRef = doc(db, 'users', user.uid);
+              await setDoc(userRef, { fcmToken: token, updatedAt: serverTimestamp() }, { merge: true });
+              console.log('FCM Token synced.');
+            }
+          } catch (err) {
+            console.warn('FCM not configured, but local timer notifications will work fine.', err);
+          }
         }
+        
+        // Force state update to re-render the Sidebar
+        setUser(u => ({ ...u }));
       } else {
         console.warn('Notification permission denied.');
       }
