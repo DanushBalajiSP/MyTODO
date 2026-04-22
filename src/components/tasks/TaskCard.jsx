@@ -1,12 +1,58 @@
-import { Check, Clock, Pencil, Trash2, GripVertical, Repeat } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Check, Clock, Pencil, Trash2, GripVertical, Repeat, AlarmClock, ChevronDown } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatDueDate, formatTime, getDateUrgency } from '../../utils/dateUtils';
 import { TASK_PRIORITY } from '../../utils/constants';
 
-const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
+/* ------------------------------------------------------------------
+   Snooze dropdown options
+------------------------------------------------------------------- */
+const snoozeOptions = [
+  { label: '1 hour',     getValue: () => { const d = new Date(); d.setHours(d.getHours() + 1, 0, 0, 0); return d; } },
+  { label: 'Tonight 9pm', getValue: () => { const d = new Date(); d.setHours(21, 0, 0, 0); return d; } },
+  { label: 'Tomorrow',   getValue: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; } },
+  { label: 'Next week',  getValue: () => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(9, 0, 0, 0); return d; } },
+];
+
+const SnoozeMenu = ({ onSnooze, onClose }) => {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [onClose]);
+
+  return (
+    <div className="snooze-menu" ref={ref}>
+      <div className="snooze-menu__header">
+        <AlarmClock size={13} /> Snooze / Reschedule
+      </div>
+      {snoozeOptions.map(opt => (
+        <button
+          key={opt.label}
+          className="snooze-menu__item"
+          onClick={(e) => { e.stopPropagation(); onSnooze(opt.getValue()); onClose(); }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------
+   TaskCard
+------------------------------------------------------------------- */
+const TaskCard = ({ task, onToggle, onEdit, onDelete, onSnooze }) => {
   const isCompleted = task.status === 'completed';
   const urgency = getDateUrgency(task.dueDate);
+
+  const [animState, setAnimState] = useState(null);
+  const [showSnooze, setShowSnooze] = useState(false);
 
   const {
     attributes,
@@ -18,31 +64,35 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
   } = useSortable({ id: task.id });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? 'none' : transition,
-    opacity: isDragging ? 0.4 : undefined,
-    zIndex: isDragging ? 2 : undefined,
-    position: isDragging ? 'relative' : undefined,
+    transform: CSS.Transform.toString(transform),
+    transition: transition,
+    opacity: isDragging ? 0 : 1,
   };
 
   const handleToggle = (e) => {
-    // Stop BOTH change and click from reaching parent card
     e.stopPropagation();
-    onToggle(task.id, task.status);
+    if (isCompleted) {
+      onToggle(task.id, task.status);
+      return;
+    }
+    setAnimState('completing');
+    setTimeout(() => {
+      setAnimState('exiting');
+      setTimeout(() => {
+        setAnimState(null);
+        onToggle(task.id, task.status);
+      }, 450);
+    }, 350);
   };
 
-  const stopClick = (e) => {
-    e.stopPropagation();
-  };
+  const stopClick = (e) => e.stopPropagation();
 
-  const handleEdit = (e) => {
-    e.stopPropagation();
-    onEdit(task);
-  };
+  const handleEdit = (e) => { e.stopPropagation(); onEdit(task); };
+  const handleDelete = (e) => { e.stopPropagation(); onDelete(task); };
+  const handleSnoozeClick = (e) => { e.stopPropagation(); setShowSnooze(s => !s); };
 
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    onDelete(task);
+  const handleSnooze = (newDate) => {
+    if (onSnooze) onSnooze(task.id, newDate);
   };
 
   const getPriorityClass = () => {
@@ -54,21 +104,27 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
     }
   };
 
+  const cardClass = [
+    'task-card',
+    isCompleted ? 'task-card--completed' : '',
+    animState === 'completing' ? 'task-card--completing' : '',
+    animState === 'exiting' ? 'task-card--exiting' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`task-card ${isCompleted ? 'task-card--completed' : ''}`}
+      className={cardClass}
       onClick={handleEdit}
       role="button"
       tabIndex={0}
       aria-label={`Task: ${task.title}`}
     >
       {/* Drag Handle */}
-      {/* Exclude drag handle from Edit trigger by stopping propagation, though dnd-kit handles it */}
-      <div 
-        className="task-card__drag-handle" 
-        {...attributes} 
+      <div
+        className="task-card__drag-handle"
+        {...attributes}
         {...listeners}
         onClick={e => e.stopPropagation()}
         tabIndex={-1}
@@ -115,7 +171,6 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
             </span>
           )}
           
-          {/* Tags */}
           {task.tags && task.tags.length > 0 && (
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
               {task.tags.map(tag => (
@@ -129,7 +184,24 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete }) => {
       </div>
 
       {/* Actions */}
-      <div className="task-card__actions">
+      <div className="task-card__actions" onClick={stopClick} style={{ position: 'relative' }}>
+        {/* Snooze button — only for pending tasks */}
+        {!isCompleted && (
+          <>
+            <button
+              className="task-card__action-btn"
+              onClick={handleSnoozeClick}
+              aria-label="Snooze task"
+              title="Snooze / Reschedule"
+            >
+              <AlarmClock size={15} />
+              <ChevronDown size={11} />
+            </button>
+            {showSnooze && (
+              <SnoozeMenu onSnooze={handleSnooze} onClose={() => setShowSnooze(false)} />
+            )}
+          </>
+        )}
         <button
           className="task-card__action-btn"
           onClick={handleEdit}

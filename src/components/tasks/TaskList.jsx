@@ -1,26 +1,28 @@
+import { useState } from 'react';
 import TaskCard from './TaskCard';
 import EmptyState from '../common/EmptyState';
 import { ClipboardList, CheckCircle2, CalendarRange, Inbox } from 'lucide-react';
 import { FILTER_TYPES } from '../../utils/constants';
-import { 
-  DndContext, 
-  closestCenter, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
-  useSensors 
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
 } from '@dnd-kit/core';
-import { 
-  SortableContext, 
+import {
+  SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy 
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
 const emptyStateConfig = {
   [FILTER_TYPES.TODAY]: {
     icon: ClipboardList,
     title: 'No tasks for today',
-    description: 'You\'re all caught up! Add a new task or enjoy your free time.',
+    description: "You're all caught up! Add a new task or enjoy your free time.",
   },
   [FILTER_TYPES.UPCOMING]: {
     icon: CalendarRange,
@@ -39,11 +41,15 @@ const emptyStateConfig = {
   },
 };
 
-const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, onReorder }) => {
+const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, onReorder, onSnooze }) => {
+  const [activeTask, setActiveTask] = useState(null);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Raised from 5 → 8px for better mobile touch accuracy
+        // Require at least 8px of movement before drag starts — prevents
+        // accidental drags when clicking checkboxes or edit buttons.
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -51,11 +57,22 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, 
     })
   );
 
+  const handleDragStart = (event) => {
+    const { active } = event;
+    const found = tasks.find(t => t.id === active.id);
+    setActiveTask(found ?? null);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    setActiveTask(null);
     if (active.id !== over?.id && onReorder) {
-      onReorder(active.id, over?.id);
+      onReorder(active.id, over.id);
     }
+  };
+
+  const handleDragCancel = () => {
+    setActiveTask(null);
   };
 
   if (tasks.length === 0) {
@@ -71,32 +88,44 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, 
     );
   }
 
-  // We only allow reordering if we are in the 'TODAY' or general lists, maybe disabled in Completed.
-  // Actually dnd-kit can manage list of IDs.
   const taskIds = tasks.map(t => t.id);
 
   return (
-    <DndContext 
+    <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div className="task-list">
-        <SortableContext 
-          items={taskIds}
-          strategy={verticalListSortingStrategy}
-        >
-          {tasks.map((task, index) => (
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {tasks.map((task) => (
             <TaskCard
               key={task.id}
               task={task}
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}
+              onSnooze={onSnooze}
             />
           ))}
         </SortableContext>
       </div>
+
+      {/* DragOverlay renders the floating "ghost" card that follows your cursor */}
+      <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+        {activeTask ? (
+          <div style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.25)', borderRadius: '1rem', opacity: 0.95, rotate: '1.5deg', cursor: 'grabbing' }}>
+            <TaskCard
+              task={activeTask}
+              onToggle={() => {}}
+              onEdit={() => {}}
+              onDelete={() => {}}
+            />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 };

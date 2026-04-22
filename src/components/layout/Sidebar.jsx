@@ -1,36 +1,29 @@
-import { CheckSquare, CalendarCheck, CalendarClock, CircleCheckBig, LogOut, Moon, Sun, BarChart3, User } from 'lucide-react';
+import {
+  CheckSquare, LogOut, Moon, Sun, BarChart3,
+  StickyNote, ListTodo, Tag
+} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
 import { useTasks } from '../../hooks/useTasks';
-import { NAV_ITEMS, FILTER_TYPES } from '../../utils/constants';
-
-const iconMap = {
-  CalendarCheck,
-  CalendarClock,
-  CircleCheckBig,
-};
+import { useNotes } from '../../hooks/useNotes';
 
 const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
   const { user, signOut, requestNotificationPermission } = useAuth();
-  const { activeFilter, setFilter, taskCounts, allTags, activeTag, setActiveTag } = useTasks();
+  const { tasks, taskCounts, activeTag, setActiveTag } = useTasks();
+  const { notes } = useNotes();
+
+  const allTags = Array.from(new Set([
+    ...tasks.flatMap(t => t.tags || []),
+    ...notes.flatMap(n => n.tags || [])
+  ])).sort();
 
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isNotes    = location.pathname === '/' || location.pathname === '/notes';
+  const isTasks    = location.pathname === '/tasks';
   const isAnalytics = location.pathname === '/analytics';
-  const isProfile = location.pathname === '/profile';
-
-  const countMap = {
-    [FILTER_TYPES.TODAY]: taskCounts.today,
-    [FILTER_TYPES.UPCOMING]: taskCounts.upcoming,
-    [FILTER_TYPES.COMPLETED]: taskCounts.completed,
-  };
-
-  const handleNavClick = (filterId) => {
-    navigate('/');
-    setFilter(filterId);
-    onClose?.();
-  };
+  const isProfile  = location.pathname === '/profile';
 
   const handleSignOut = async () => {
     try {
@@ -39,6 +32,11 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
       console.error('Sign out failed:', err);
     }
   };
+
+  const nav = (path) => { navigate(path); onClose?.(); };
+
+  // Pending task count for Tasks badge
+  const pendingCount = taskCounts.today + taskCounts.upcoming;
 
   return (
     <>
@@ -59,59 +57,58 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
 
         {/* Navigation */}
         <nav className="sidebar__nav">
-          <span className="sidebar__nav-label">Tasks</span>
-          {NAV_ITEMS.map((item) => {
-            const Icon = iconMap[item.icon];
-            const isActive = activeFilter === item.id;
-            return (
-              <button
-                key={item.id}
-                className={`sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`}
-                onClick={() => handleNavClick(item.id)}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <Icon size={20} className="sidebar__nav-icon" />
-                <span>{item.label}</span>
-                <span className="sidebar__nav-badge">{countMap[item.id] || 0}</span>
-              </button>
-            );
-          })}
+          <span className="sidebar__nav-label">Workspace</span>
+
+          {/* Notes */}
+          <button
+            className={`sidebar__nav-item ${isNotes ? 'sidebar__nav-item--active' : ''}`}
+            onClick={() => nav('/notes')}
+            aria-current={isNotes ? 'page' : undefined}
+          >
+            <StickyNote size={20} className="sidebar__nav-icon" />
+            <span>Notes</span>
+            <span className="sidebar__nav-badge">{notes.length || 0}</span>
+          </button>
+
+          {/* Tasks */}
+          <button
+            className={`sidebar__nav-item ${isTasks ? 'sidebar__nav-item--active' : ''}`}
+            onClick={() => nav('/tasks')}
+            aria-current={isTasks ? 'page' : undefined}
+          >
+            <ListTodo size={20} className="sidebar__nav-icon" />
+            <span>Tasks</span>
+            <span className="sidebar__nav-badge">{pendingCount || 0}</span>
+          </button>
 
           <span className="sidebar__nav-label" style={{ marginTop: 'var(--space-4)' }}>Insights</span>
           <button
             className={`sidebar__nav-item ${isAnalytics ? 'sidebar__nav-item--active' : ''}`}
-            onClick={() => { navigate('/analytics'); onClose?.(); }}
+            onClick={() => nav('/analytics')}
           >
             <BarChart3 size={20} className="sidebar__nav-icon" />
-            <span>Dashboard</span>
+            <span>Productivity</span>
           </button>
-          
-          {allTags && allTags.length > 0 && (
-            <div style={{ marginTop: 'var(--space-4)' }}>
-              <span className="sidebar__nav-label">Tags</span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', padding: '0 var(--space-4)', marginTop: 'var(--space-2)' }}>
+
+          {allTags.length > 0 && (
+            <>
+              <span className="sidebar__nav-label" style={{ marginTop: 'var(--space-4)' }}>Tags</span>
+              <div className="sidebar__tags">
                 {allTags.map(tag => (
                   <button
                     key={tag}
-                    className="tag-chip"
-                    style={{ 
-                      background: activeTag === tag ? 'var(--primary-100)' : undefined, 
-                      color: activeTag === tag ? 'var(--primary-700)' : undefined, 
-                      border: activeTag === tag ? '1px solid var(--primary-300)' : '1px solid transparent',
-                      cursor: 'pointer' 
-                    }}
-                    onClick={() => { 
-                      setActiveTag(activeTag === tag ? null : tag); 
-                      // Switch to ALL filter to see all results when selecting a tag
-                      if (activeTag !== tag) setFilter(FILTER_TYPES.ALL);
-                      onClose?.(); 
+                    className={`sidebar__nav-item ${activeTag === tag ? 'sidebar__nav-item--active' : ''}`}
+                    onClick={() => {
+                      setActiveTag(activeTag === tag ? null : tag);
+                      if (!isNotes && !isTasks) nav('/notes');
                     }}
                   >
-                    #{tag}
+                    <Tag size={16} className="sidebar__nav-icon" style={{ opacity: 0.7 }} />
+                    <span style={{ fontSize: 'var(--font-size-sm)' }}>#{tag}</span>
                   </button>
                 ))}
               </div>
-            </div>
+            </>
           )}
         </nav>
 
@@ -123,10 +120,7 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
               className="sidebar__nav-item"
               onClick={requestNotificationPermission}
               title="Enable Push Notifications"
-              style={{ 
-                marginBottom: 'var(--space-1)', 
-                color: 'var(--primary-500)' 
-              }}
+              style={{ marginBottom: 'var(--space-1)', color: 'var(--primary-500)' }}
             >
               <span style={{ fontSize: '20px', width: '20px', textAlign: 'center' }}>🔔</span>
               <span>Enable Reminders</span>
@@ -144,10 +138,10 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
           </button>
 
           {/* User section */}
-          <div 
-            className="sidebar__user" 
+          <div
+            className="sidebar__user"
             style={{ cursor: 'pointer', background: isProfile ? 'var(--bg-hover)' : '' }}
-            onClick={() => { navigate('/profile'); onClose?.(); }}
+            onClick={() => nav('/profile')}
           >
             {user?.photoURL ? (
               <img

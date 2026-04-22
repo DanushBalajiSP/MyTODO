@@ -58,6 +58,15 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
     }
   };
 
+  // Snooze / Reschedule task
+  const handleSnoozeTask = async (taskId, newDate) => {
+    try {
+      await editTask(taskId, { dueDate: newDate });
+    } catch (err) {
+      console.error('Snooze failed:', err);
+    }
+  };
+
   // Delete task
   const handleDeleteConfirm = async () => {
     if (!deletingTask) return;
@@ -144,6 +153,7 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
         onDelete={setDeletingTask}
         onAddTask={handleAddTask}
         onReorder={reorderTasks}
+        onSnooze={handleSnoozeTask}
       />
 
 

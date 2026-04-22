@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { FocusModalRenderer } from '../productivity/FocusStreak';
 
 const AppLayout = ({ onAddTask }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -55,6 +56,7 @@ const AppLayout = ({ onAddTask }) => {
           onAddTask={onAddTask}
         />
         <Outlet />
+        <FocusModalRenderer />
       </main>
     </div>
   );

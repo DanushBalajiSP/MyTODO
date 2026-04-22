@@ -1,30 +1,23 @@
 import { Menu, Plus } from 'lucide-react';
 import { useLocation } from 'react-router';
 import Button from '../common/Button';
-import { useTasks } from '../../hooks/useTasks';
-import { FILTER_TYPES } from '../../utils/constants';
+import { FocusModeButton } from '../productivity/FocusStreak';
 
-const filterTitleMap = {
-  [FILTER_TYPES.TODAY]: "Today's Tasks",
-  [FILTER_TYPES.UPCOMING]: 'Upcoming Tasks',
-  [FILTER_TYPES.COMPLETED]: 'Completed Tasks',
-  [FILTER_TYPES.ALL]: 'All Tasks',
-};
-
-const filterSubtitleMap = {
-  [FILTER_TYPES.TODAY]: 'Focus on what matters now',
-  [FILTER_TYPES.UPCOMING]: 'Plan ahead and stay organized',
-  [FILTER_TYPES.COMPLETED]: 'Review your accomplishments',
-  [FILTER_TYPES.ALL]: 'Everything in one place',
+const routeMeta = {
+  '/':          { title: 'Notes',        subtitle: 'Your personal idea workspace' },
+  '/notes':     { title: 'Notes',        subtitle: 'Your personal idea workspace' },
+  '/tasks':     { title: 'Tasks',        subtitle: 'Focus on what matters today' },
+  '/analytics': { title: 'Productivity', subtitle: 'Track your streaks and insights' },
+  '/profile':   { title: 'Profile',      subtitle: 'Manage your account' },
 };
 
 const Header = ({ onMenuClick, onAddTask }) => {
-  const { activeFilter } = useTasks();
   const location = useLocation();
-  const isDashboard = location.pathname === '/' || location.pathname === '';
+  const meta = routeMeta[location.pathname] || { title: 'MyTODO', subtitle: '' };
+  const isTasks = location.pathname === '/tasks';
 
   return (
-    <header className="header" style={{ borderBottom: isDashboard ? '1px solid var(--border-color)' : 'none' }}>
+    <header className="header">
       <div className="header__left">
         <button
           className="header__menu-btn"
@@ -33,15 +26,14 @@ const Header = ({ onMenuClick, onAddTask }) => {
         >
           <Menu size={24} />
         </button>
-        {isDashboard && (
-          <div>
-            <h1 className="header__title">{filterTitleMap[activeFilter]}</h1>
-            <p className="header__subtitle">{filterSubtitleMap[activeFilter]}</p>
-          </div>
-        )}
+        <div>
+          <h1 className="header__title">{meta.title}</h1>
+          {meta.subtitle && <p className="header__subtitle">{meta.subtitle}</p>}
+        </div>
       </div>
       <div className="header__right">
-        {isDashboard && (
+        <FocusModeButton />
+        {isTasks && (
           <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
             Add Task
           </Button>

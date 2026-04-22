@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import { TaskProvider } from './context/TaskContext';
+import { NoteProvider } from './context/NoteContext';
+import { FocusProvider } from './context/FocusContext';
 import App from './App';
 
 import './styles/index.css';
@@ -12,7 +14,11 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <TaskProvider>
-        <App />
+        <NoteProvider>
+          <FocusProvider>
+            <App />
+          </FocusProvider>
+        </NoteProvider>
       </TaskProvider>
     </AuthProvider>
   </StrictMode>

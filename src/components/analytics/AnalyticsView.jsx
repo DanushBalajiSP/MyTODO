@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { useTasks } from '../../hooks/useTasks';
 import { TASK_PRIORITY } from '../../utils/constants';
+import { StreakWidget } from '../productivity/FocusStreak';
 
 const COLORS = {
   high: 'var(--danger)',
@@ -105,6 +106,27 @@ const AnalyticsView = () => {
       
       <div className="analytics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
         
+        {/* Streak Widget */}
+        <StreakWidget />
+
+        {/* Summary stats */}
+        <div className="analytics-card" style={{ background: 'var(--bg-secondary)', padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)' }}>
+          <h3 style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>Overview</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            {[
+              { label: 'Total Tasks', value: taskCounts.total, color: 'var(--primary-500)' },
+              { label: 'Completed', value: taskCounts.completed, color: 'var(--success)' },
+              { label: 'Pending Today', value: taskCounts.today, color: 'var(--warning)' },
+              { label: 'Upcoming', value: taskCounts.upcoming, color: 'var(--primary-400)' },
+            ].map(s => (
+              <div key={s.label} style={{ textAlign: 'center', padding: 'var(--space-3)', background: 'var(--bg-hover)', borderRadius: 'var(--radius-lg)' }}>
+                <p style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: s.color }}>{s.value}</p>
+                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 4 }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Trend Line Chart */}
         <div className="analytics-card" style={{ background: 'var(--bg-secondary)', padding: 'var(--space-6)', borderRadius: 'var(--radius-xl)', gridColumn: '1 / -1' }}>
           <h3 style={{ marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-lg)', fontWeight: 600 }}>7-Day Activity Trend</h3>

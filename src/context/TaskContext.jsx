@@ -202,37 +202,55 @@ export const TaskProvider = ({ children }) => {
 
   const reorderTasks = useCallback(async (activeId, overId) => {
     if (!user?.uid || activeId === overId) return;
-    
-    // Find indices based on the filtered view we are looking at!
+
+    // Work entirely within the filtered visible list
     const oldIndex = filteredTasks.findIndex(t => t.id === activeId);
     const newIndex = filteredTasks.findIndex(t => t.id === overId);
-    
+
     if (oldIndex === -1 || newIndex === -1) return;
 
-    // Calculate new order value
-    let newOrderVal = 0;
+    // Build the new visible order after the move
+    const reorderedList = arrayMove(filteredTasks, oldIndex, newIndex);
+
+    // Calculate a new order number that sits between its new neighbours.
+    // We use the neighbours' current order values (which may be timestamps or
+    // fractional numbers) so the gap is always proportional.
+    let newOrderVal;
+    const getOrder = (task) => task.order ?? task.createdAt?.getTime?.() ?? 0;
+
     if (newIndex === 0) {
-      const nextOrder = reorderedList[1]?.order ?? reorderedList[1]?.createdAt?.getTime() ?? Date.now();
-      newOrderVal = nextOrder - 100000; // Large gap
+      // Moved to the very top — go before the current first item
+      newOrderVal = getOrder(reorderedList[1]) - 1;
     } else if (newIndex === reorderedList.length - 1) {
-      const prevOrder = reorderedList[reorderedList.length - 2]?.order ?? reorderedList[reorderedList.length - 2]?.createdAt?.getTime() ?? Date.now();
-      newOrderVal = prevOrder + 100000;
+      // Moved to the very bottom — go after the current last item
+      newOrderVal = getOrder(reorderedList[reorderedList.length - 2]) + 1;
     } else {
-      const prevOrder = reorderedList[newIndex - 1]?.order ?? reorderedList[newIndex - 1]?.createdAt?.getTime() ?? Date.now();
-      const nextOrder = reorderedList[newIndex + 1]?.order ?? reorderedList[newIndex + 1]?.createdAt?.getTime() ?? Date.now();
-      newOrderVal = (prevOrder + nextOrder) / 2;
+      // Somewhere in the middle — place it exactly between neighbours
+      const prev = getOrder(reorderedList[newIndex - 1]);
+      const next = getOrder(reorderedList[newIndex + 1]);
+      newOrderVal = (prev + next) / 2;
     }
 
-    // Optimistic Update: prevent snap-back by updating local state immediately
-    dispatch({ type: 'SET_TASKS', payload: arrayMove(state.tasks, state.tasks.findIndex(t => t.id === activeId), state.tasks.findIndex(t => t.id === overId)) });
+    // Optimistic update: immediately reflect the new visual order in the UI
+    // by rebuilding state.tasks with the moved item carrying the new order value.
+    const optimisticTasks = state.tasks.map(t =>
+      t.id === activeId ? { ...t, order: newOrderVal } : t
+    ).sort((a, b) => {
+      const orderA = a.order ?? a.createdAt?.getTime?.() ?? 0;
+      const orderB = b.order ?? b.createdAt?.getTime?.() ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return (priorityValue[b.priority] || 0) - (priorityValue[a.priority] || 0);
+    });
+
+    dispatch({ type: 'SET_TASKS', payload: optimisticTasks });
 
     try {
       await editTask(activeId, { order: newOrderVal });
     } catch (error) {
-      console.error('Failed to reorder', error);
-      // Wait for Firebase listener to resync if it fails
+      console.error('Failed to save reorder to Firestore:', error);
+      // Firebase listener will resync the correct state automatically
     }
-  }, [user?.uid, filteredTasks, editTask]);
+  }, [user?.uid, filteredTasks, state.tasks, editTask]);
 
   const setFilter = useCallback((filter) => {
     dispatch({ type: 'SET_FILTER', payload: filter });

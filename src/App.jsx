@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AnalyticsView from './components/analytics/AnalyticsView';
 import ProfileView from './pages/ProfileView';
+import NotesPage from './pages/NotesPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 const App = () => {
@@ -24,8 +25,11 @@ const App = () => {
         {/* Protected routes */}
         <Route element={<ProtectedLayout />}>
           <Route element={<AppLayout onAddTask={handleAddTask} />}>
+            {/* Notes is the default landing page */}
+            <Route index element={<NotesPage />} />
+            <Route path="/notes" element={<NotesPage />} />
             <Route
-              index
+              path="/tasks"
               element={
                 <DashboardPage
                   showTaskForm={showTaskForm}
