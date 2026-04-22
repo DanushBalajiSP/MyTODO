@@ -34,9 +34,14 @@ const Header = ({ onMenuClick, onAddTask }) => {
       <div className="header__right">
         <FocusModeButton />
         {isTasks && (
-          <Button variant="primary" size="md" icon={Plus} onClick={onAddTask}>
-            Add Task
-          </Button>
+          <>
+            <Button variant="primary" size="md" icon={Plus} onClick={onAddTask} className="header__add-btn">
+              Add Task
+            </Button>
+            <button className="mobile-fab" onClick={onAddTask} aria-label="Add Task">
+              <Plus size={24} />
+            </button>
+          </>
         )}
       </div>
     </header>

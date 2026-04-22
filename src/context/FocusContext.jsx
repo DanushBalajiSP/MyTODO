@@ -8,9 +8,42 @@ export const useFocus = () => {
   return ctx;
 };
 
+const playAlertSound = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    // Pleasant double-beep sound
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // A5
+    
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+    gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+    
+    gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.2);
+    gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+};
+
 const sendNotification = (title, body) => {
+  playAlertSound();
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    try { new Notification(title, { body, icon: '/favicon.ico' }); } catch {}
+    try { 
+      new Notification(title, { 
+        body, 
+        icon: '/MyTODO/pwa-192x192.png',
+        vibrate: [200, 100, 200]
+      }); 
+    } catch {}
   }
 };
 

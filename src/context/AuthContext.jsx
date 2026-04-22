@@ -6,7 +6,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider, messaging } from '../lib/firebase';
-import { getToken } from 'firebase/messaging';
+import { getToken, onMessage } from 'firebase/messaging';
 
 export const AuthContext = createContext(null);
 
@@ -58,6 +58,27 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
+    return () => unsubscribe();
+  }, []);
+
+  // Listen to FOREGROUND Firebase Cloud Messages
+  useEffect(() => {
+    if (!messaging) return;
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Received foreground message:', payload);
+      // Play a quick alert sound
+      try {
+        const audio = new Audio('/MyTODO/favicon.ico'); // Just a hack to trigger audio context if needed, but native Notification makes sound anyway
+      } catch(e) {}
+      
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification(payload.notification.title || 'MyTODO Update', {
+          body: payload.notification.body,
+          icon: '/MyTODO/pwa-192x192.png',
+        });
+      }
+    });
+    
     return () => unsubscribe();
   }, []);
 

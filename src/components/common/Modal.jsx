@@ -1,7 +1,28 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { X } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children, footer }) => {
+  const [isRendered, setIsRendered] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsRendered(true);
+      document.body.style.overflow = 'hidden';
+      // Small delay to ensure display: block is applied before animating opacity
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsAnimating(true));
+      });
+    } else {
+      setIsAnimating(false);
+      const timer = setTimeout(() => {
+        setIsRendered(false);
+        document.body.style.overflow = '';
+      }, 300); // Matches CSS transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // Close on Escape key
   const handleKeyDown = useCallback(
     (e) => {
@@ -11,21 +32,15 @@ const Modal = ({ isOpen, onClose, title, children, footer }) => {
   );
 
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
+    if (isOpen) document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   return (
     <div
-      className="modal-overlay"
+      className={`modal-overlay ${isAnimating ? 'modal-overlay--visible' : ''}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -33,7 +48,7 @@ const Modal = ({ isOpen, onClose, title, children, footer }) => {
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal ${isAnimating ? 'modal--visible' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h2 className="modal__title" id="modal-title">
             {title}

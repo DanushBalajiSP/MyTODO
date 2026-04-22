@@ -168,6 +168,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -218,6 +219,11 @@ img {
 
 ul, ol {
   list-style: none;
+}
+
+/* Recharts overrides */
+.recharts-wrapper *:focus {
+  outline: none !important;
 }
 
 /* ============================
