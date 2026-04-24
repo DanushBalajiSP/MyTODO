@@ -8,7 +8,7 @@ export const useFocus = () => {
   return ctx;
 };
 
-const playAlertSound = () => {
+export const playAlertSound = () => {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -34,7 +34,7 @@ const playAlertSound = () => {
   } catch(e) {}
 };
 
-const sendNotification = (title, body) => {
+export const sendNotification = (title, body) => {
   playAlertSound();
   if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
     try { 

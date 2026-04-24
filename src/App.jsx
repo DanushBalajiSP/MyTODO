@@ -7,7 +7,16 @@ import DashboardPage from './pages/DashboardPage';
 import AnalyticsView from './components/analytics/AnalyticsView';
 import ProfileView from './pages/ProfileView';
 import NotesPage from './pages/NotesPage';
+import HomeWidgetPage from './pages/HomeWidgetPage';
 import NotFoundPage from './pages/NotFoundPage';
+import { Navigate } from 'react-router';
+
+const IndexRedirect = () => {
+  const lastPage = localStorage.getItem('mytodo_last_page');
+  if (lastPage === '/tasks') return <Navigate to="/tasks" replace />;
+  if (lastPage === '/notes') return <Navigate to="/notes" replace />;
+  return <Navigate to="/" replace />; // default to home (widgets)
+};
 
 const App = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -25,8 +34,9 @@ const App = () => {
         {/* Protected routes */}
         <Route element={<ProtectedLayout />}>
           <Route element={<AppLayout onAddTask={handleAddTask} />}>
-            {/* Notes is the default landing page */}
-            <Route index element={<NotesPage />} />
+            {/* Root - Home Screen with Widgets */}
+            <Route index element={<HomeWidgetPage />} />
+            <Route path="/dashboard" element={<HomeWidgetPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route
               path="/tasks"

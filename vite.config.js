@@ -36,6 +36,22 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
+        ],
+        shortcuts: [
+          {
+            name: 'My Tasks',
+            short_name: 'Tasks',
+            description: 'View your pending tasks',
+            url: '/tasks',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'My Notes',
+            short_name: 'Notes',
+            description: 'View your pinned notes',
+            url: '/notes',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
+          }
         ]
       }
     })

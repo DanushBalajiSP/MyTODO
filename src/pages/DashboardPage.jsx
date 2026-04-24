@@ -11,6 +11,8 @@ import { FILTER_TYPES } from '../utils/constants';
 const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
   const {
     filteredTasks,
+    todayTasks,
+    overdueTasks,
     activeFilter,
     setFilter,
     taskCounts,
@@ -84,37 +86,6 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
 
   return (
     <div className="dashboard">
-      {/* Stats bar */}
-      <div className="stats-bar">
-        <div className="stats-card">
-          <div className="stats-card__icon stats-card__icon--primary">
-            <ListTodo size={20} />
-          </div>
-          <div>
-            <p className="stats-card__value">{taskCounts.today}</p>
-            <p className="stats-card__label">Today</p>
-          </div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-card__icon stats-card__icon--warning">
-            <AlertTriangle size={20} />
-          </div>
-          <div>
-            <p className="stats-card__value">{taskCounts.upcoming}</p>
-            <p className="stats-card__label">Upcoming</p>
-          </div>
-        </div>
-        <div className="stats-card">
-          <div className="stats-card__icon stats-card__icon--success">
-            <CheckCircle size={20} />
-          </div>
-          <div>
-            <p className="stats-card__value">{taskCounts.completed}</p>
-            <p className="stats-card__label">Done</p>
-          </div>
-        </div>
-      </div>
-
       {/* Filter tabs (mobile-friendly inline) */}
       <div className="task-filters">
         {[
@@ -147,6 +118,8 @@ const DashboardPage = ({ showTaskForm, setShowTaskForm }) => {
       {/* Task list */}
       <TaskList
         tasks={filteredTasks}
+        overdueTasks={overdueTasks}
+        todayTasks={todayTasks}
         activeFilter={activeFilter}
         onToggle={toggleStatus}
         onEdit={handleEditTask}

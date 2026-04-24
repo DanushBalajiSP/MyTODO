@@ -11,8 +11,19 @@ import { getToken, onMessage } from 'firebase/messaging';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('mytodo_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch { return null; }
+  });
+  
+  // Only show the loading screen if we don't have a cached user
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('mytodo_user');
+    } catch { return true; }
+  });
 
   // Create or update user document in Firestore
   const createUserDocument = async (firebaseUser) => {
@@ -44,16 +55,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        setUser({
+        const userData = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
           photoURL: firebaseUser.photoURL,
           creationTime: firebaseUser.metadata.creationTime,
-        });
+        };
+        setUser(userData);
+        localStorage.setItem('mytodo_user', JSON.stringify(userData));
         await createUserDocument(firebaseUser);
       } else {
         setUser(null);
+        localStorage.removeItem('mytodo_user');
       }
       setLoading(false);
     });
@@ -134,6 +148,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await firebaseSignOut(auth);
       setUser(null);
+      localStorage.removeItem('mytodo_user');
     } catch (error) {
       console.error('Sign-out error:', error);
       throw error;

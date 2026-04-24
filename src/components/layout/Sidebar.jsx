@@ -1,6 +1,6 @@
 import {
   CheckSquare, LogOut, Moon, Sun, BarChart3,
-  StickyNote, ListTodo, Tag
+  StickyNote, ListTodo, Tag, LayoutDashboard
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,7 +20,8 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isNotes    = location.pathname === '/' || location.pathname === '/notes';
+  const isHome     = location.pathname === '/' || location.pathname === '/dashboard';
+  const isNotes    = location.pathname === '/notes';
   const isTasks    = location.pathname === '/tasks';
   const isAnalytics = location.pathname === '/analytics';
   const isProfile  = location.pathname === '/profile';
@@ -49,8 +50,8 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
       <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
         {/* Brand */}
         <div className="sidebar__brand">
-          <div className="sidebar__logo">
-            <CheckSquare size={20} />
+          <div className="sidebar__logo-container">
+            <CheckSquare size={22} strokeWidth={2.5} />
           </div>
           <span className="sidebar__app-name">MyTODO</span>
         </div>
@@ -58,6 +59,16 @@ const Sidebar = ({ isOpen, onClose, isDark, onToggleTheme }) => {
         {/* Navigation */}
         <nav className="sidebar__nav">
           <span className="sidebar__nav-label">Workspace</span>
+
+          {/* Home */}
+          <button
+            className={`sidebar__nav-item ${isHome ? 'sidebar__nav-item--active' : ''}`}
+            onClick={() => nav('/')}
+            aria-current={isHome ? 'page' : undefined}
+          >
+            <LayoutDashboard size={20} className="sidebar__nav-icon" />
+            <span>Home</span>
+          </button>
 
           {/* Notes */}
           <button

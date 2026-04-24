@@ -41,14 +41,12 @@ const emptyStateConfig = {
   },
 };
 
-const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, onReorder, onSnooze }) => {
+const TaskList = ({ tasks, overdueTasks, todayTasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, onReorder, onSnooze }) => {
   const [activeTask, setActiveTask] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        // Require at least 8px of movement before drag starts — prevents
-        // accidental drags when clicking checkboxes or edit buttons.
         distance: 8,
       },
     }),
@@ -88,7 +86,7 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, 
     );
   }
 
-  const taskIds = tasks.map(t => t.id);
+  const isTodayFilter = activeFilter === FILTER_TYPES.TODAY;
 
   return (
     <DndContext
@@ -99,18 +97,73 @@ const TaskList = ({ tasks, activeFilter, onToggle, onEdit, onDelete, onAddTask, 
       onDragCancel={handleDragCancel}
     >
       <div className="task-list">
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onSnooze={onSnooze}
-            />
-          ))}
-        </SortableContext>
+        {isTodayFilter ? (
+          <>
+            {/* 1. Overdue Section */}
+            {overdueTasks?.length > 0 && (
+              <div className="task-section task-section--overdue">
+                <h3 className="task-section__title">
+                  Overdue
+                  <span className="task-section__count">{overdueTasks.length}</span>
+                </h3>
+                <div className="task-section__list">
+                  <SortableContext items={overdueTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    {overdueTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onToggle={onToggle}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onSnooze={onSnooze}
+                      />
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Today Section */}
+            <div className="task-section">
+              <h3 className="task-section__title">
+                {overdueTasks?.length > 0 ? "Today's Tasks" : "Tasks"}
+                <span className="task-section__count">{todayTasks?.length || 0}</span>
+              </h3>
+              <div className="task-section__list">
+                <SortableContext items={todayTasks?.map(t => t.id) || []} strategy={verticalListSortingStrategy}>
+                  {todayTasks?.map((task) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onToggle={onToggle}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onSnooze={onSnooze}
+                    />
+                  ))}
+                </SortableContext>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Default flat list for other filters */
+          <div className="task-section">
+            <div className="task-section__list">
+              <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                {tasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggle}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onSnooze={onSnooze}
+                  />
+                ))}
+              </SortableContext>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* DragOverlay renders the floating "ghost" card that follows your cursor */}

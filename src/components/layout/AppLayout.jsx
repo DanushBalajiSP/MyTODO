@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { FocusModalRenderer } from '../productivity/FocusStreak';
+import NotificationScheduler from '../common/NotificationScheduler';
+import TutorialOverlay from '../common/TutorialOverlay';
 
 const AppLayout = ({ onAddTask }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -17,6 +19,14 @@ const AppLayout = ({ onAddTask }) => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+
+  // Track last visited page for smart redirect
+  const location = useLocation();
+  useEffect(() => {
+    if (location.pathname === '/tasks' || location.pathname === '/notes') {
+      localStorage.setItem('mytodo_last_page', location.pathname);
+    }
+  }, [location.pathname]);
 
   // Close sidebar on escape
   useEffect(() => {
@@ -57,6 +67,8 @@ const AppLayout = ({ onAddTask }) => {
         />
         <Outlet />
         <FocusModalRenderer />
+        <NotificationScheduler />
+        <TutorialOverlay />
       </main>
     </div>
   );

@@ -109,6 +109,7 @@ const TaskCard = ({ task, onToggle, onEdit, onDelete, onSnooze }) => {
     isCompleted ? 'task-card--completed' : '',
     animState === 'completing' ? 'task-card--completing' : '',
     animState === 'exiting' ? 'task-card--exiting' : '',
+    showSnooze ? 'task-card--active' : '',
   ].filter(Boolean).join(' ');
 
   return (

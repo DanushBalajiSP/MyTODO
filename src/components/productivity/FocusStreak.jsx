@@ -243,31 +243,73 @@ export const FocusModalRenderer = () => {
 /* ── Streak widget (analytics page) ────────────────────── */
 const getMidnight = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); };
 
-export const StreakWidget = () => {
+export const StreakWidget = ({ isMinimal }) => {
   const { tasks } = useTasks();
 
-  const completedDays = new Set(
-    tasks.filter(t => t.completedAt).map(t => getMidnight(t.completedAt))
-  );
-
   const todayMs = getMidnight(new Date());
-  const sorted  = Array.from(completedDays).sort((a,b) => b - a);
+  const yesterdayMs = todayMs - 86400000;
+  
+  // Use a Set for fast lookup of unique completion days
+  const completedDays = new Set();
+  
+  tasks.forEach(t => {
+    if (t.status === 'completed') {
+      if (t.completedAt) {
+        completedDays.add(getMidnight(t.completedAt));
+      } else {
+        completedDays.add(todayMs);
+      }
+    }
+  });
 
+  // 1. Calculate current streak (with a 1-day grace period for today)
   let current = 0;
-  let cursor  = sorted[0] === todayMs ? todayMs : todayMs - 86400000;
-  for (const day of sorted) {
-    if (day === cursor) { current++; cursor -= 86400000; }
-    else if (day < cursor) break;
+  if (completedDays.has(todayMs)) {
+    current = 1;
+    let check = yesterdayMs;
+    while (completedDays.has(check)) {
+      current++;
+      check -= 86400000;
+    }
+  } else if (completedDays.has(yesterdayMs)) {
+    current = 1;
+    let check = yesterdayMs - 86400000;
+    while (completedDays.has(check)) {
+      current++;
+      check -= 86400000;
+    }
   }
 
-  const ascending = Array.from(completedDays).sort((a,b) => a-b);
-  let longest = ascending.length ? 1 : 0, run = 1;
+  // 2. Calculate longest streak
+  const ascending = Array.from(completedDays).sort((a, b) => a - b);
+  let longest = ascending.length ? 1 : 0;
+  let run = 1;
   for (let i = 1; i < ascending.length; i++) {
-    if (ascending[i] - ascending[i-1] === 86400000) longest = Math.max(longest, ++run);
-    else run = 1;
+    if (ascending[i] - ascending[i-1] === 86400000) {
+      run++;
+      longest = Math.max(longest, run);
+    } else {
+      run = 1;
+    }
   }
 
-  const completedToday = tasks.filter(t => t.completedAt && getMidnight(t.completedAt) === todayMs).length;
+  if (isMinimal) {
+    return (
+      <div className="streak-minimal">
+        <div className="streak-minimal__flame">
+          <Flame size={32} fill="var(--warning)" color="var(--warning)" />
+          <span className="streak-minimal__count">{current}</span>
+        </div>
+        <p className="streak-minimal__label">Day Streak</p>
+      </div>
+    );
+  }
+
+  const completedToday = tasks.filter(t => {
+    if (t.status !== 'completed') return false;
+    const d = t.completedAt ? getMidnight(t.completedAt) : todayMs;
+    return d === todayMs;
+  }).length;
 
   return (
     <div className="streak-widget">
