@@ -2572,104 +2572,6 @@
 }
 
 /* ============================
-   TUTORIAL / ONBOARDING
-   ============================ */
-
-/* ============================
-   TUTORIAL / ONBOARDING
-   ============================ */
-
-.tutorial-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-6);
-  opacity: 0;
-  animation: fadeIn 0.4s forwards;
-}
-
-.tutorial-card {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  padding: var(--space-6);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-2xl);
-  max-width: 320px;
-  width: 100%;
-  position: relative;
-  border: 1px solid var(--border-color);
-  transform: translateY(20px);
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.tutorial-card__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
-  color: var(--primary-500);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.tutorial-card__title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-2);
-}
-
-.tutorial-card__body {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  line-height: var(--line-height-relaxed);
-  margin-bottom: var(--space-6);
-}
-
-.tutorial-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.tutorial-card__steps {
-  font-size: var(--font-size-xs);
-  color: var(--text-tertiary);
-}
-
-.tutorial-card__spotlight {
-  position: fixed;
-  pointer-events: none;
-  border: 2px solid var(--primary-500);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4), 0 0 15px var(--primary-400);
-  border-radius: var(--radius-lg);
-  z-index: 1999;
-  transition: all 0.4s cubic-bezier(0.33, 1, 0.68, 1);
-}
-
-@keyframes slideUp {
-  to { transform: translateY(0); }
-}
-
-@media (max-width: 640px) {
-  .tutorial-card {
-    position: fixed;
-    bottom: var(--space-6);
-    left: var(--space-6);
-    right: var(--space-6);
-    max-width: none;
-    width: auto;
-  }
-}
-
-/* ============================
    HOME WIDGETS
    ============================ */
 
@@ -2867,5 +2769,81 @@
 @media (max-width: 640px) {
   .widgets-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================
+   RELOAD PROMPT (PWA UPDATES)
+   ============================ */
+
+.reload-prompt {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  margin: var(--space-4);
+  padding: var(--space-4);
+  z-index: 5000;
+  pointer-events: none;
+}
+
+.reload-prompt__card {
+  pointer-events: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  animation: slideUp 0.4s ease;
+}
+
+.reload-prompt__content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.reload-prompt__icon {
+  color: var(--primary-500);
+}
+
+.reload-prompt__text {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.reload-prompt__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.reload-prompt__close {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
+}
+
+.reload-prompt__close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .reload-prompt {
+    left: 0;
+    margin: var(--space-2);
+  }
+  
+  .reload-prompt__card {
+    width: 100%;
+    justify-content: space-between;
   }
 }

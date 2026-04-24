@@ -4,7 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import { FocusModalRenderer } from '../productivity/FocusStreak';
 import NotificationScheduler from '../common/NotificationScheduler';
-import TutorialOverlay from '../common/TutorialOverlay';
+import ReloadPrompt from '../common/ReloadPrompt';
 
 const AppLayout = ({ onAddTask }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -68,7 +68,7 @@ const AppLayout = ({ onAddTask }) => {
         <Outlet />
         <FocusModalRenderer />
         <NotificationScheduler />
-        <TutorialOverlay />
+        <ReloadPrompt />
       </main>
     </div>
   );

@@ -37,10 +37,23 @@ const NotificationScheduler = () => {
           const diffMins = Math.floor(diffMs / 60000);
 
           // If due in 9-11 minutes (to catch it in the 1min interval)
-          if (diffMins === 10 && !notified.has(`due10m_${task.id}`)) {
+          if (diffMins <= 10 && diffMins > 0 && !notified.has(`due10m_${task.id}`)) {
+            // Schedule in Service Worker for background persistence
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then(reg => {
+                reg.active.postMessage({
+                  type: 'SCHEDULE_NOTIFICATION',
+                  title: '⏰ Task starting soon',
+                  body: `"${task.title}" is due in ${diffMins} minutes.`,
+                  timestamp: due.getTime(), // Schedule for exact due time
+                  tag: `due_${task.id}`
+                });
+              });
+            }
+
             sendNotification(
               '⏰ Task starting soon',
-              `"${task.title}" is due in 10 minutes.`
+              `"${task.title}" is due in ${diffMins} minutes.`
             );
             notified.add(`due10m_${task.id}`);
             changed = true;

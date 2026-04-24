@@ -34,16 +34,25 @@ export const playAlertSound = () => {
   } catch(e) {}
 };
 
-export const sendNotification = (title, body) => {
+export const sendNotification = async (title, body) => {
   playAlertSound();
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    try { 
-      new Notification(title, { 
-        body, 
+  if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification(title, {
+        body,
         icon: '/MyTODO/pwa-192x192.png',
-        vibrate: [200, 100, 200]
-      }); 
-    } catch {}
+        badge: '/MyTODO/favicon.svg',
+        vibrate: [200, 100, 200],
+        tag: 'mytodo-alert',
+        renotify: true
+      });
+    } catch (e) {
+      // Fallback to basic notification if SW fails
+      new Notification(title, { body, icon: '/MyTODO/pwa-192x192.png' });
+    }
+  } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    new Notification(title, { body, icon: '/MyTODO/pwa-192x192.png' });
   }
 };
 
@@ -171,6 +180,19 @@ export const FocusProvider = ({ children }) => {
     setTargetTime(tTime);
     setIsRunning(true);
     
+    // Background Notification Scheduling
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.active.postMessage({
+          type: 'SCHEDULE_NOTIFICATION',
+          title: '🎉 Focus complete!',
+          body: 'Great work! Time for a break.',
+          delayMs: secs * 1000,
+          tag: 'focus-end'
+        });
+      });
+    }
+
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -186,6 +208,19 @@ export const FocusProvider = ({ children }) => {
     setPhase('break');
     setTargetTime(tTime);
     setIsRunning(true);
+
+    // Background Notification Scheduling
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.active.postMessage({
+          type: 'SCHEDULE_NOTIFICATION',
+          title: '🚀 Break over!',
+          body: 'Ready to get back to focus?',
+          delayMs: secs * 1000,
+          tag: 'break-end'
+        });
+      });
+    }
   }, []);
 
   const togglePause = useCallback(() => {
