@@ -12,11 +12,9 @@ export default defineConfig({
       filename: 'sw.js',
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      devOptions: {
-        enabled: true,
-        type: 'module'
-      },
       manifest: {
+        type: 'module',
+        name: 'MyTODO - Smart Task Manager',
         name: 'MyTODO - Smart Task Manager',
         short_name: 'MyTODO',
         description: 'A scalable, cross-platform personal todo management app.',
@@ -46,14 +44,14 @@ export default defineConfig({
             name: 'My Tasks',
             short_name: 'Tasks',
             description: 'View your pending tasks',
-            url: '/tasks',
+            url: 'tasks',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           },
           {
             name: 'My Notes',
             short_name: 'Notes',
             description: 'View your pinned notes',
-            url: '/notes',
+            url: 'notes',
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192' }]
           }
         ]
